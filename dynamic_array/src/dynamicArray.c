@@ -31,7 +31,7 @@ int dynamic_array_append(DA_struct *array, void *item) {
     array->capacity = 1;
   } else if (array->capacity <= array->length) {
     size_t new_capacity = array->capacity * 2;
-    array->items = realloc(array->items, new_capacity);
+    array->items = realloc(array->items, array->itemSize * new_capacity);
     if (array->items == NULL) {
       printf("ERROR: In dynamic_array_append - realloc() failed\n");
       return false;
@@ -53,29 +53,41 @@ int dynamic_array_append(DA_struct *array, void *item) {
 
 void *dynamic_array_pop(DA_struct *array) { return NULL; }
 
+void *dynamic_array_remove_all(DA_struct *array, void *item) {
+  int *location = (int *)array->items;
+  int count = 0;
+
+  for (int i = 0; i < array->length; i++) {
+    if (memcmp(location, item, array->itemSize) == 0) {
+      count++;
+    }
+  }
+  for (int i = 0; i < count; i++) {
+    dynamic_array_remove(array, item);
+  }
+  return NULL;
+}
+
 void *dynamic_array_remove(DA_struct *array, void *item) {
   int i = 0;
   int *location = (int *)array->items;
   int count = 0;
   size_t remainder = 0;
-  
+
   for (i = 0; i < array->length; ++i) {
     if (memcmp(location, item, array->itemSize) == 0) {
       count = array->capacity - i - 1;
       remainder = count * array->itemSize;
 
-      //copy remainding memory to location.
-      if (memmove(location, location + array->itemSize, remainder) == NULL) {
+      // copy remainding memory to location.
+      if (memcpy(location, (int *)(location + array->itemSize), remainder) ==
+          NULL) {
         printf("ERROR: in dynamic_array_remove - memcpy failed");
         fflush(stdout);
         exit(1);
       }
       array->length--;
-      /*if (array->length * array->itemSize <= array->capacity / 2) {*/
-      /*  size_t new_capacity = array->capacity / 2;*/
-      /*  array->items = realloc(array->items, new_capacity * array->itemSize);*/
-      /*  array->capacity = new_capacity;*/
-      /*}*/
+
       return NULL;
     }
 
@@ -86,7 +98,7 @@ void *dynamic_array_remove(DA_struct *array, void *item) {
 
 void dynamic_array_free(DA_struct *array) {
   if (array->length > 0) {
-      free(array->items);
+    free(array->items);
   }
 }
 
@@ -98,11 +110,16 @@ int main() {
   DA_struct array = dynamic_array_init(sizeof(int), 2);
 
   int here = 3;
-  printf("here\n");
+  int there = 4;
   fflush(stdout);
   dynamic_array_append(&array, &here);
   dynamic_array_append(&array, &here);
-  dynamic_array_remove(&array, &here);
+  dynamic_array_append(&array, &here);
+  dynamic_array_append(&array, &here);
+  dynamic_array_append(&array, &there);
+  dynamic_array_remove(&array, &there);
+  dynamic_array_remove_all(&array, &here);
+  printf("HERE");
   printf("DYNAMIC ARRAY LENGTH: %zu", array.length);
   fflush(stdout);
   dynamic_array_free(&array);
